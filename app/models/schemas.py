@@ -17,7 +17,7 @@ class Trade(BaseModel):
     size: int
     direction: str
     trade_day: str
-    duration_seconds: int
+    duration_seconds: float  # float to preserve milliseconds for algo/scalper trades
     is_winner: bool
 
     # TODO v2: add account_id when multi-account support is added

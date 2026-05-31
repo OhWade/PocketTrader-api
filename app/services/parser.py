@@ -33,6 +33,52 @@ def parse_timestamp(ts_str: str) -> datetime:
     dt = datetime.strptime(ts_str, "%m/%d/%Y %H:%M:%S %z")
     return dt.astimezone(timezone.utc)
 
+import csv
+import io
+from datetime import datetime, timezone
+from app.models.schemas import Trade
+
+
+def parse_duration(duration_str: str) -> float:
+    """Convert TradeDuration string to total seconds as float.
+
+    Preserves milliseconds for algo/scalper trades.
+    Example input: '00:01:14.1020610'
+    """
+    try:
+        total_seconds = 0.0
+        if "." in duration_str:
+            main, fraction = duration_str.split(".")
+            # fraction can be up to 7 digits (100-nanosecond ticks)
+            # truncate to 6 digits for microseconds then convert to seconds
+            fraction = fraction[:6]
+            total_seconds += int(fraction) / 1_000_000
+        else:
+            main = duration_str
+
+        parts = main.split(":")
+        hours = int(parts[0])
+        minutes = int(parts[1])
+        seconds = int(parts[2])
+        total_seconds += (hours * 3600) + (minutes * 60) + seconds
+        return round(total_seconds, 3)
+    except Exception:
+        return 0.0
+
+
+def parse_timestamp(ts_str: str) -> datetime:
+    """Parse Topstep timestamp string to UTC datetime.
+
+    Example input: '05/28/2026 18:30:01 -07:00'
+
+    # TODO v2: accept user timezone preference for display formatting
+    # TODO v2: tag trades by NYSE session (pre-market, regular, after-hours)
+    # TODO v2: flag trades outside NYSE calendar as weekend/holiday trades
+    """
+    ts_str = ts_str.strip()
+    dt = datetime.strptime(ts_str, "%m/%d/%Y %H:%M:%S %z")
+    return dt.astimezone(timezone.utc)
+
 
 def parse_csv(file_bytes: bytes) -> list[Trade]:
     """Parse a Topstep CSV export into a list of normalized Trade objects.
